@@ -1,4 +1,7 @@
 import mongoose from "mongoose";
+import { customAlphabet } from "nanoid";
+
+const nanoid = customAlphabet("1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ", 6);
 
 const projectSchema = new mongoose.Schema(
   {
@@ -21,9 +24,20 @@ const projectSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    projectCode: {
+      type: String,
+      unique: true,
+    },
   },
   { timestamps: true }
 );
+
+projectSchema.pre("save", function (next) {
+  if (!this.projectCode) {
+    this.projectCode = `PROJ-${nanoid()}`;
+  }
+  next();
+});
 
 // Duplicate Key Error Handling
 projectSchema.post("save", function (error, doc, next) {

@@ -1,4 +1,7 @@
 import mongoose from "mongoose";
+import { customAlphabet } from "nanoid";
+
+const nanoid = customAlphabet("1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ", 6);
 
 // Subdocument Schema for Comments
 const commentSchema = new mongoose.Schema(
@@ -33,9 +36,21 @@ const taskSchema = new mongoose.Schema(
     assignees: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     subtasks: [{ type: mongoose.Schema.Types.ObjectId, ref: "Subtask" }],
     comments: [commentSchema],
+    taskCode: {
+      type: String,
+      unique: true,
+      immutable: true,
+    },
   },
   { timestamps: true }
 );
+
+taskSchema.pre("save", function (next) {
+  if (!this.taskCode) {
+    this.taskCode = `TASK-${nanoid()}`; // <-- call nanoid() here!
+  }
+  next();
+});
 
 // Error Handling (e.g., duplicate key error)
 taskSchema.post("save", function (error, doc, next) {
