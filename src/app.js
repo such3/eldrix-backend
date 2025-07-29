@@ -11,7 +11,10 @@ dotenv.config();
 const app = express();
 
 // Static Files
-app.use(express.static(path.join(process.cwd(), "public")));
+app.use(
+  "/uploads",
+  express.static(path.join(process.cwd(), "public", "uploads"))
+);
 
 // Body Parsing
 app.use(express.json({ limit: "16kb" }));
@@ -22,6 +25,8 @@ app.use(cookieParser());
 
 // Import Routes
 import userRouter from "./routes/user.route.js";
+
+app.use("/api/v1/users", userRouter);
 
 // HTTP Request Logging
 app.use(morganMiddleware);

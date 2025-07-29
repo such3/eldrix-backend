@@ -6,8 +6,11 @@ import {
   getCurrentUser,
   refreshAccessToken,
   updateAccountDetails,
+  changeCurrentPassword,
 } from "../controllers/user.controller.js"; // User authentication controllers
 import { verifyJWT } from "../middlewares/auth.js";
+
+import avatarUpload from "../middlewares/multer.js";
 
 const router = new Router();
 
@@ -23,6 +26,9 @@ router.route("/refresh-token").post(refreshAccessToken); // Token refresh handle
 
 router.route("/profile").get(verifyJWT, getCurrentUser);
 
-router.route("/profile").patch(verifyJWT, updateAccountDetails);
+router
+  .route("/profile")
+  .patch(verifyJWT, avatarUpload.single("avatar"), updateAccountDetails);
 
+router.route("/change-password").patch(verifyJWT, changeCurrentPassword);
 export default router;

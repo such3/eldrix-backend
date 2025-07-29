@@ -4,24 +4,26 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User.model.js";
+import Project from "../models/Project.model.js";
+import path from "path";
+import fs from "fs/promises"; // Use fs/promises for better async file handling
+import fetch from "node-fetch"; // Add this import at the top of your file
 
-// Function to generate access and refresh tokens for the user
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
-    const user = await User.findById(userId); // Find user by ID
+    const user = await User.findById(userId);
     if (!user) {
       throw new ApiError(404, "User not found");
     }
 
-    const accessToken = user.generateAccessToken(); // Generate access token
-    const refreshToken = user.generateRefreshToken(); // Generate refresh token
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
 
-    // Store the refresh token in the user's record for future use
-    user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });
 
-    return { accessToken, refreshToken }; // Return both tokens
+    return { accessToken, refreshToken };
   } catch (error) {
+    console.error("Token generation error:", error); // <--- Add this line
     throw new ApiError(
       500,
       "Something went wrong while generating refresh and access tokens"
@@ -61,11 +63,20 @@ const registerUser = asyncHandler(async (req, res, next) => {
     );
   }
 
+  // Generate default avatar URL using first letter of fullName
+  const firstLetter = fullName.trim().charAt(0).toUpperCase();
+
+  // Example using DiceBear Avatars API for initials:
+  const defaultAvatarUrl = `https://avatars.dicebear.com/api/initials/${encodeURIComponent(
+    firstLetter
+  )}.svg`;
+
   try {
     const user = await User.create({
       fullName,
       email,
       password,
+      avatar: defaultAvatarUrl,
     });
 
     const createdUser = await User.findById(user._id).select(
@@ -151,7 +162,7 @@ const logoutUser = asyncHandler(async (req, res, next) => {
     $unset: { refreshToken: "" }, // clearer than $set: undefined
   });
 
-  const cookieOptions = { httpOnly: true, secure: true, sameSite: "Strict" };
+  const cookieOptions = { httpOnly: true, secure: false, sameSite: "Strict" };
 
   return res
     .status(200)
@@ -177,6 +188,12 @@ const getCurrentUser = asyncHandler(async (req, res, next) => {
     .json(new ApiResponse(200, user, "Current user fetched successfully"));
 });
 
+// Helper to generate default avatar URL from name
+const generateDefaultAvatar = (name) => {
+  const initial = name?.charAt(0)?.toUpperCase() || "U";
+  return `https://api.dicebear.com/7.x/initials/svg?seed=${initial}&backgroundColor=ffdfbf`;
+};
+
 const updateAccountDetails = asyncHandler(async (req, res, next) => {
   const { fullName } = req.body;
 
@@ -188,41 +205,48 @@ const updateAccountDetails = asyncHandler(async (req, res, next) => {
     );
   }
 
-  let avatarUrl = null;
+  const user = await User.findById(req.user._id);
 
-  if (req.file) {
-    const avatarLocalPath = req.file?.path;
-
-    if (!avatarLocalPath) {
-      return next(new ApiError(400, "Avatar file is missing"));
-    }
-
-    const avatar = await uploadOnCloudinary(avatarLocalPath);
-
-    if (!avatar?.url) {
-      return next(new ApiError(500, "Error while uploading avatar"));
-    }
-
-    avatarUrl = avatar.url;
+  if (!user) {
+    return next(new ApiError(404, "User not found"));
   }
 
+  let avatarUrl = user.avatar || null; // Fallback to existing avatar if available
+
+  // === 🖼️ Handle avatar file upload ===
+  if (req.file) {
+    // Delete previous avatar if it was a local file
+    if (user.avatar && user.avatar.startsWith("/uploads")) {
+      const oldAvatarPath = path.join(process.cwd(), user.avatar);
+      try {
+        await fs.unlink(oldAvatarPath);
+        console.log("Deleted old avatar:", oldAvatarPath);
+      } catch (err) {
+        console.warn("Failed to delete old avatar:", oldAvatarPath);
+      }
+    }
+
+    // Save new avatar path to database
+    const filePath = path.join("uploads", "avatars", req.file.filename);
+    avatarUrl = `/${filePath.replace(/\\/g, "/")}`; // Ensure proper path format
+  }
+
+  // === 🎨 Set default avatar if user didn't have any ===
+  if (!avatarUrl) {
+    avatarUrl = generateDefaultAvatar(fullName); // This will generate an avatar based on the fullName
+  }
+
+  // Update user with new full name and avatar
   const updateData = {
     fullName,
+    avatar: avatarUrl,
   };
-
-  if (avatarUrl) {
-    updateData.avatar = avatarUrl;
-  }
 
   const updatedUser = await User.findByIdAndUpdate(
     req.user._id,
     { $set: updateData },
     { new: true }
   ).select("-password -refreshToken");
-
-  if (!updatedUser) {
-    return next(new ApiError(404, "User not found"));
-  }
 
   return res
     .status(200)
@@ -281,7 +305,7 @@ const refreshAccessToken = asyncHandler(async (req, res, next) => {
 
     const cookieOptions = {
       httpOnly: true,
-      secure: true,
+      secure: false,
       sameSite: "Strict",
     };
 
