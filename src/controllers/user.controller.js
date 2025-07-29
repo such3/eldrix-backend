@@ -1,9 +1,9 @@
-import asyncHandler from "../utils/asyncHandler";
-import { ApiError } from "../utils/ApiError";
-import { ApiResponse } from "../utils/ApiResponse";
+import asyncHandler from "../utils/asyncHandler.js";
+import { ApiError } from "../utils/ApiError.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import User from "../models/User.model";
+import User from "../models/User.model.js";
 
 // Function to generate access and refresh tokens for the user
 const generateAccessAndRefreshTokens = async (userId) => {
@@ -232,22 +232,28 @@ const updateAccountDetails = asyncHandler(async (req, res, next) => {
 const changeCurrentPassword = asyncHandler(async (req, res, next) => {
   const { oldPassword, newPassword } = req.body;
 
+  if (!oldPassword || !newPassword) {
+    return next(
+      new ApiError(400, "Old password and new password are required")
+    );
+  }
+
   const user = await User.findById(req.user._id);
   if (!user) {
     return next(new ApiError(404, "User not found"));
   }
 
-  const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
-  if (!isPasswordCorrect) {
+  const isOldPasswordValid = await user.isPasswordCorrect(oldPassword);
+  if (!isOldPasswordValid) {
     return next(new ApiError(400, "Old password is incorrect"));
   }
 
-  user.password = newPassword; // Will be hashed by pre-save hook
+  user.password = newPassword; // The password will be hashed via pre-save middleware
   await user.save();
 
   return res
     .status(200)
-    .json(new ApiResponse(200, null, "Password changed successfully"));
+    .json(new ApiResponse(200, null, "Password updated successfully"));
 });
 
 const refreshAccessToken = asyncHandler(async (req, res, next) => {

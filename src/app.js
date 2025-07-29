@@ -20,6 +20,9 @@ app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 // Cookie Parser
 app.use(cookieParser());
 
+// Import Routes
+import userRouter from "./routes/user.route.js";
+
 // HTTP Request Logging
 app.use(morganMiddleware);
 
