@@ -6,6 +6,11 @@ const nanoid = customAlphabet("1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ", 6);
 // Subdocument Schema for Comments
 const commentSchema = new mongoose.Schema(
   {
+    commentCode: {
+      type: String,
+      unique: true, // This uniqueness is not enforced at DB-level on subdocs but helps as indicator
+      immutable: true,
+    },
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     text: { type: String, required: true, trim: true },
     createdAt: { type: Date, default: Date.now },
@@ -46,10 +51,18 @@ const taskSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Add commentCode to comments before saving if missing
 taskSchema.pre("save", function (next) {
   if (this.isNew && !this.taskCode) {
-    this.taskCode = `TASK-${nanoid()}`; // <-- call nanoid() here!
+    this.taskCode = `TASK-${nanoid()}`;
   }
+
+  this.comments.forEach((comment) => {
+    if (!comment.commentCode) {
+      comment.commentCode = `CMT-${nanoid()}`;
+    }
+  });
+
   next();
 });
 

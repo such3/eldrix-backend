@@ -9,10 +9,12 @@ const subtaskSchema = new mongoose.Schema(
       type: String,
       required: [true, "Subtask title is required"],
       trim: true,
+      minlength: [3, "Subtask title should be at least 3 characters long"], // Added length check for title
     },
     description: {
       type: String,
       trim: true,
+      default: "No description provided", // Adding a default value
     },
     status: {
       type: String,
@@ -39,9 +41,10 @@ const subtaskSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Pre-save hook to generate the subtaskCode automatically
 subtaskSchema.pre("save", function (next) {
   if (!this.subtaskCode) {
-    this.subtaskCode = `SUB-${nanoid()}`; // <-- call nanoid() as a function
+    this.subtaskCode = `SUB-${nanoid()}`; // Ensure unique code for each subtask
   }
   next();
 });
@@ -49,7 +52,7 @@ subtaskSchema.pre("save", function (next) {
 // Error Handling (Duplicate Key Example)
 subtaskSchema.post("save", function (error, doc, next) {
   if (error.name === "MongoServerError" && error.code === 11000) {
-    next(new Error("Duplicate value in Subtask schema"));
+    next(new Error("Duplicate value error in Subtask schema"));
   } else {
     next(error);
   }

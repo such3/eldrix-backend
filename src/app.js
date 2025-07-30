@@ -7,7 +7,7 @@ import morganMiddleware from "./middlewares/morgan.js";
 // Import Routes
 import userRouter from "./routes/user.route.js";
 import projectRouter from "./routes/project.route.js";
-
+import taskRouter from "./routes/task.route.js";
 // Load .env
 dotenv.config();
 
@@ -29,6 +29,9 @@ app.use(cookieParser());
 app.use("/api/v1/users", userRouter);
 
 app.use("/api/v1/projects", projectRouter);
+
+// Mount task routes under projectCode param
+app.use("/api/v1/projects/:projectCode/tasks", taskRouter);
 
 // HTTP Request Logging
 app.use(morganMiddleware);

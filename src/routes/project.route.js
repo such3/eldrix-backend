@@ -14,7 +14,6 @@ router.use(verifyJWT);
 
 router.post("/", createProject); // Create
 router.get("/", getAllProjects); // Get all
-
 router.get("/:projectCode", getProjectByCode); // Get one
 router.patch("/:projectCode", updateProject); // Update
 router.delete("/:projectCode", deleteProject); // Delete
