@@ -4,6 +4,9 @@ import path from "path";
 import cookieParser from "cookie-parser";
 import errorHandler from "./middlewares/errorHandler.js";
 import morganMiddleware from "./middlewares/morgan.js";
+// Import Routes
+import userRouter from "./routes/user.route.js";
+import projectRouter from "./routes/project.route.js";
 
 // Load .env
 dotenv.config();
@@ -23,10 +26,9 @@ app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 // Cookie Parser
 app.use(cookieParser());
 
-// Import Routes
-import userRouter from "./routes/user.route.js";
-
 app.use("/api/v1/users", userRouter);
+
+app.use("/api/v1/projects", projectRouter);
 
 // HTTP Request Logging
 app.use(morganMiddleware);

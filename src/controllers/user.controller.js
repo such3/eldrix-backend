@@ -174,8 +174,20 @@ const logoutUser = asyncHandler(async (req, res, next) => {
 const getCurrentUser = asyncHandler(async (req, res, next) => {
   const user = await User.findById(req.user._id)
     .populate({
-      path: "projects", // Adjust this if your schema has a different path
+      path: "ownedProjects",
       select: "title projectCode teammates owner",
+      populate: [
+        { path: "owner", select: "fullName email" },
+        { path: "teammates", select: "fullName email" },
+      ],
+    })
+    .populate({
+      path: "joinedProjects",
+      select: "title projectCode teammates owner",
+      populate: [
+        { path: "owner", select: "fullName email" },
+        { path: "teammates", select: "fullName email" },
+      ],
     })
     .select("-password -refreshToken");
 

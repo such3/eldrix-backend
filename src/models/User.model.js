@@ -34,12 +34,8 @@ const userSchema = new mongoose.Schema(
       enum: ["user", "admin"],
       default: "user",
     },
-    projects: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Project",
-      },
-    ],
+    ownedProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: "Project" }],
+    joinedProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: "Project" }],
     userCode: {
       type: String,
       unique: true,

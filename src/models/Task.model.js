@@ -28,6 +28,7 @@ const taskSchema = new mongoose.Schema(
       ref: "Project",
       required: [true, "Project reference is required"],
     },
+    dueDate: Date,
     priority: {
       type: String,
       enum: ["high", "medium", "low"],
@@ -46,7 +47,7 @@ const taskSchema = new mongoose.Schema(
 );
 
 taskSchema.pre("save", function (next) {
-  if (!this.taskCode) {
+  if (this.isNew && !this.taskCode) {
     this.taskCode = `TASK-${nanoid()}`; // <-- call nanoid() here!
   }
   next();
