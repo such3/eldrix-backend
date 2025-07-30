@@ -11,10 +11,12 @@ import {
 import { verifyJWT } from "../middlewares/auth.js";
 
 import avatarUpload from "../middlewares/multer.js";
+import { isAuthenticated } from "../middlewares/auth.js";
 
 const router = new Router();
 
 router.route("/register").post(
+  isAuthenticated,
   registerUser // User registration handler
 );
 
